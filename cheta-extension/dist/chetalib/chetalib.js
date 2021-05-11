@@ -42,6 +42,9 @@ function init() {
   var finalHTML = '<div id="cheta-flt-dv"><p class="cheta-flt-p">ChETA</p>';
   finalHTML += '<p class="cheta-pfnt">Words: <span id="cheta-data-wordcount">'+text.split(" ").length+'</span></p>';
   finalHTML += '<p class="cheta-pfnt">Chars: <span id="cheta-data-charcount">'+text.length+'</span></p>';
+  readingTest((score) => {
+    finalHTML += '<p class="cheta-pfnt">Reading Score: <span id="cheta-data-score">'+score+'</span></p>';
+  });
   if(config.priceperword) {
     var priceVal = text.split(" ").length * config.priceperword;
     finalHTML += '<p class="cheta-pfnt">Total PPW: $<span id="cheta-data-priceperword">'+priceVal.toFixed(2)+'</span></p>';
@@ -65,6 +68,24 @@ function getInputsByValue(value)
             results.push(allTextArea[x]);
 
     return results;
+}
+
+function new_count(word) {
+  word = word.toLowerCase();
+  if(word.length <= 3) { return 1; }
+    word = word.replace(/(?:[^laeiouy]es|ed|[^laeiouy]e)$/, '');
+    word = word.replace(/^y/, '');
+    return word.match(/[aeiouy]{1,2}/g).length;
+}
+
+const readingTest = (text, cb) => {
+  const total_words = text.split(" ");
+  const total_syllables = 0;
+  for(word in total_words) {
+    totalSyllables += new_count(word);
+  }
+  const score = 206.835 - 1.015 * (text.split(" ").length/text.split(/[.!?]+\s/).length) - 84.6 * (total_syllables/total_words);
+  cb(score);
 }
 
 init();
