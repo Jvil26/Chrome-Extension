@@ -14,9 +14,8 @@ class Home extends Component {
 
   nextTapped_det = () => {
     var config = {
-      code: this.state.uniqueCode
+      code: this.state.uniqueCode,
     };
-
     if(this.state.inputs.priceperword > 0) {
       config['priceperword'] = this.state.inputs.priceperword;
     }

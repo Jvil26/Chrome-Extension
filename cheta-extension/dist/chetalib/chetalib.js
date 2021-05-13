@@ -6,7 +6,7 @@ function init() {
   link.setAttribute('type', 'text/css');
   link.setAttribute('href', 'https://fonts.googleapis.com/css2?family=Special+Elite&display=swap');
   document.head.appendChild(link);
-
+  console.log(config);
   if(!config.code) {
     console.log("Error loading ChETA: Unique code not found")
     return;
@@ -33,6 +33,7 @@ function init() {
     var charCountSpan = document.getElementById("cheta-data-charcount");
     charCountSpan.textContent = ""+text.length;
 
+    var score = readingTest(text);
     var readingScoreSpan = document.getElementById("cheta-data-score");
     readingScoreSpan.textContent = ""+score;
 
@@ -42,11 +43,19 @@ function init() {
       pricePerWord.textContent = ""+priceVal.toFixed(2);
     }
   });
+
+  inputs[0].addEventListener('mouseup', e => {
+    getSelectedText();
+    var selectedTextSpan = document.getElementById("cheta-data-selectedText");
+    selectedTextSpan.textContent = ""+this.selectedText;
+  });
+
   const div = document.createElement('div');
   var finalHTML = '<div id="cheta-flt-dv"><p class="cheta-flt-p">ChETA</p>';
   finalHTML += '<p class="cheta-pfnt">Words: <span id="cheta-data-wordcount">'+text.split(" ").length+'</span></p>';
   finalHTML += '<p class="cheta-pfnt">Chars: <span id="cheta-data-charcount">'+text.length+'</span></p>';
   finalHTML += '<p class="cheta-pfnt">Reading Score: <span id="cheta-data-score">'+score+'</span></p>';
+  finalHTML += '<p class="cheta-pfnt">Selected Text: <span id="cheta-data-selectedText">'+this.selectedText+'</span></p>';
 
   if(config.priceperword) {
     var priceVal = text.split(" ").length * config.priceperword;
@@ -87,10 +96,18 @@ function readingTest(text) {
   for(let i = 0; i < words.length; i++) {
     totalSyllables += calc_syllables(words[i]);
   }
-  console.log(totalSyllables);
-  console.log(text.split(/[.!?]+\s/).length);
   var score = 206.835 - 1.015 * (words.length / text.split(/[.!?]+\s/).length) - 84.6 * (totalSyllables / words.length);
   return Math.round(score * 10) / 10;
+}
+
+function getSelectedText() {
+  var text = "";
+  if (typeof window.getSelection != "undefined") {
+      text = window.getSelection().toString();
+  } else if (typeof document.selection != "undefined" && document.selection.type == "Text") {
+      text = document.selection.createRange().text;
+  }
+  this.selectedText = text;
 }
 
 init();
