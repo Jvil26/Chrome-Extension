@@ -18,6 +18,7 @@ function init() {
   }
   var text = inputs[0].value.split(config.code).reverse()[0];
   var dictionary = config.dictionary;
+  var misspelledWords = findMisspelledWords(text, dictionary);
   var score = calc_readingScore(text);
   var scoreNote = scoreNotes(score, 'notes');
   var schoolLevel = scoreNotes(score, 'level');
@@ -82,19 +83,18 @@ function init() {
   });
 
   const div = document.createElement('div');
-  var finalHTML = '<div id="cheta-flt-dv"><p class="cheta-flt-p">ChETA</p>';
+  var finalHTML = '<div id="cheta-flt-dv"><p class="cheta-flt-p">ChETA</p><br>';
   finalHTML += '<p class="cheta-pfnt">Words: <span id="cheta-data-wordcount">'+text.split(" ").length+'</span></p>';
-  finalHTML += '<p class="cheta-pfnt">Chars: <span id="cheta-data-charcount">'+text.length+'</span></p>';
-  finalHTML += '<hr>'
-  finalHTML += '<br>'
-  finalHTML += '<p class="cheta-pfnt">Reading Score: <span id="cheta-data-score">'+score+'</span></p>';
-  finalHTML += '<br>'
-  finalHTML += '<p class="cheta-pfnt">School Level (US): <span id="cheta-data-schoolLevel">'+schoolLevel+'</span></p>';
-  finalHTML += '<br>'
-  finalHTML += '<p class="cheta-pfnt">Note: <span id="cheta-data-scoreNote">'+scoreNote+'</span></p>';
-  finalHTML += '<hr>'
-  finalHTML += '<br>'
-  finalHTML += '<p class="cheta-pfnt">Selected Text: <span id="cheta-data-selectedText"></span></p>';
+  finalHTML += '<p class="cheta-pfnt">Chars: <span id="cheta-data-charcount">'+text.length+'</span></p><br><hr>';
+  finalHTML += '<p class="cheta-pfnt">Reading Score: <span id="cheta-data-score">'+score+'</span></p><br>';
+  finalHTML += '<p class="cheta-pfnt">School Level (US): <span id="cheta-data-schoolLevel">'+schoolLevel+'</span></p><br>';
+  finalHTML += '<p class="cheta-pfnt">Note: <span id="cheta-data-scoreNote">'+scoreNote+'</span></p><br><hr>';
+  finalHTML += '<p class="cheta-pfnt">Selected Text: <span id="cheta-data-selectedText"></span></p><br><hr>';
+  finalHTML += '<p class="cheta-pfnt">Misspelled Words: <span id="cheta-data-mispelledWords">';
+  for (let i = 0; i < misspelledWords.length; i++) {
+    finalHTML += '<p class="mispelledWords">'+misspelledWords[i]+'</p>'
+  }
+  finalHTML += '</span></p>';
   finalHTML += '</div>';
   div.innerHTML = finalHTML;
   document.body.appendChild(div);
@@ -186,6 +186,19 @@ function getSelectedText() {
       text = document.selection.createRange().text;
   }
   this.selectedText = text;
+}
+
+function findMisspelledWords(text, dictionary) {
+  var words = text.split(" ");
+  var misspelledWords = [];
+  for (let i = 0; i < words.length; i++) {
+    words[i] = words[i].charAt(0).toUpperCase() + words[i].slice(1).toLowerCase();
+    var property = words[i].replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"").replace(/\s{2,}/g," ");
+    if (!dictionary[property]) {
+      misspelledWords.push(words[i]);
+    }
+  }
+  return misspelledWords;
 }
 
 init();
