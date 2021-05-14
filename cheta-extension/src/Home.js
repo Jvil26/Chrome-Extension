@@ -1,20 +1,23 @@
 /*global chrome*/
 import React, { Component } from 'react';
+import all_words from './all_words.json'
 
 class Home extends Component {
   constructor(props){
     super(props);
     this.state = {
-      uniqueCode: `<cheta>`,
+      uniqueCode: `<justin>`,
+      dictionary: all_words,
       inputs: {
-        priceperword: '0.05'
+        priceperword: '0.20'
       }
     }
   }
 
   nextTapped_det = () => {
     var config = {
-      code: this.state.uniqueCode
+      code: this.state.uniqueCode,
+      dictionary: this.state.dictionary
     };
     if(this.state.inputs.priceperword > 0) {
       config['priceperword'] = this.state.inputs.priceperword;

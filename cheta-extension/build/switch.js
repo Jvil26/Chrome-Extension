@@ -17,7 +17,10 @@ function init() {
     return;
   }
   var text = inputs[0].value.split(config.code).reverse()[0];
-  var score = readingTest(text);
+  var dictionary = config.dictionary;
+  var score = calc_readingScore(text);
+  var scoreNote = scoreNotes(score, 'notes');
+  var schoolLevel = scoreNotes(score, 'level');
   // alert(text)
   inputs[0].value = inputs[0].value;
   inputs[0].addEventListener('input', (e) => {
@@ -33,14 +36,42 @@ function init() {
     var charCountSpan = document.getElementById("cheta-data-charcount");
     charCountSpan.textContent = ""+text.length;
 
-    var score = readingTest(text);
+    var score = calc_readingScore(text);
     var readingScoreSpan = document.getElementById("cheta-data-score");
-    readingScoreSpan.textContent = ""+score;
-
-    if(config.priceperword) {
-      var pricePerWord = document.getElementById("cheta-data-priceperword");
-      var priceVal = text.split(" ").length * config.priceperword;
-      pricePerWord.textContent = ""+priceVal.toFixed(2);
+    var schoolLevelSpan = document.getElementById("cheta-data-schoolLevel");
+    var scoreNoteSpan = document.getElementById("cheta-data-scoreNote");
+    if (score >= 90) {
+      readingScoreSpan.textContent = ""+score;
+      scoreNoteSpan.textContent = "Very easy to read. Easily understood by an average 11-year-old student.";
+      schoolLevelSpan.textContent = "5th Grade";
+    } else if (score >= 80) {
+      readingScoreSpan.textContent = ""+score;
+      scoreNoteSpan.textContent = "Easy to read. Conversational English for consumers.";
+      schoolLevelSpan.textContent = "6th Grade";
+    } else if (score >= 70) {
+      readingScoreSpan.textContent = ""+score;
+      scoreNoteSpan.textContent = "Fairly easy to read.";
+      schoolLevelSpan.textContent = "7th Grade";
+    } else if (score >= 60) {
+      readingScoreSpan.textContent = ""+score;
+      scoreNoteSpan.textContent = "Plain English. Easily understood by 13- to 15-year-old students.";
+      schoolLevelSpan.textContent = "8th Grade & 9th Grade";
+    } else if (score >= 50) {
+      readingScoreSpan.textContent = ""+score;
+      scoreNoteSpan.textContent = "Fairly difficult to read.";
+      schoolLevelSpan.textContent = "10th to 12th Grade";
+    } else if (score >= 30) {
+      readingScoreSpan.textContent = ""+score;
+      scoreNoteSpan.textContent = "Difficult to read.";
+      schoolLevelSpan.textContent = "College";
+    } else if (score >= 10) {
+      readingScoreSpan.textContent = ""+score;
+      scoreNoteSpan.textContent = "Very difficult to read. Best understood by university graduates.";
+      schoolLevelSpan.textContent = "College Graduate";
+    } else {
+      readingScoreSpan.textContent = ""+score;
+      scoreNoteSpan.textContent = "Extremely difficult to read. Best understood by university graduates.";
+      schoolLevelSpan.textContent = "Professional";
     }
   });
 
@@ -54,13 +85,16 @@ function init() {
   var finalHTML = '<div id="cheta-flt-dv"><p class="cheta-flt-p">ChETA</p>';
   finalHTML += '<p class="cheta-pfnt">Words: <span id="cheta-data-wordcount">'+text.split(" ").length+'</span></p>';
   finalHTML += '<p class="cheta-pfnt">Chars: <span id="cheta-data-charcount">'+text.length+'</span></p>';
+  finalHTML += '<hr>'
+  finalHTML += '<br>'
   finalHTML += '<p class="cheta-pfnt">Reading Score: <span id="cheta-data-score">'+score+'</span></p>';
-  finalHTML += '<p class="cheta-pfnt">Selected Text: <span id="cheta-data-selectedText">'+this.selectedText+'</span></p>';
-
-  if(config.priceperword) {
-    var priceVal = text.split(" ").length * config.priceperword;
-    finalHTML += '<p class="cheta-pfnt">Total PPW: $<span id="cheta-data-priceperword">'+priceVal.toFixed(2)+'</span></p>';
-  }
+  finalHTML += '<br>'
+  finalHTML += '<p class="cheta-pfnt">School Level (US): <span id="cheta-data-schoolLevel">'+schoolLevel+'</span></p>';
+  finalHTML += '<br>'
+  finalHTML += '<p class="cheta-pfnt">Note: <span id="cheta-data-scoreNote">'+scoreNote+'</span></p>';
+  finalHTML += '<hr>'
+  finalHTML += '<br>'
+  finalHTML += '<p class="cheta-pfnt">Selected Text: <span id="cheta-data-selectedText"></span></p>';
   finalHTML += '</div>';
   div.innerHTML = finalHTML;
   document.body.appendChild(div);
@@ -90,7 +124,7 @@ function calc_syllables(word) {
     return word.match(/[aeiouy]{1,2}/g).length;
 }
 
-function readingTest(text) {
+function calc_readingScore(text) {
   var words = text.split(" ");
   var totalSyllables = 0;
   for(let i = 0; i < words.length; i++) {
@@ -98,6 +132,50 @@ function readingTest(text) {
   }
   var score = 206.835 - 1.015 * (words.length / text.split(/[.!?]+\s/).length) - 84.6 * (totalSyllables / words.length);
   return Math.round(score * 10) / 10;
+}
+
+function scoreNotes(score, param) {
+  if (param == 'level') {
+    var schoolLevel;
+    if (score >= 90) {
+      schoolLevel = "5th Grade";
+    } else if (score >= 80) {
+      schoolLevel = "6th Grade";
+    } else if (score >= 70) {
+      schoolLevel = "7th Grade";
+    } else if (score >= 60) {
+      schoolLevel = "8th Grade & 9th Grade";
+    } else if (score >= 50) {
+      schoolLevel = "10th to 12th Grade";
+    } else if (score >= 30) {
+      schoolLevel = "College";
+    } else if (score >= 10) {
+      schoolLevel = "College Graduate";
+    } else {
+      schoolLevel = "Professional";
+    }
+    return schoolLevel;
+  } else if (param == 'notes') {
+    var scoreNote;
+    if (score >= 90) {
+      scoreNote = "Very easy to read. Easily understood by an average 11-year-old student.";
+    } else if (score >= 80) {
+      scoreNote = "Easy to read. Conversational English for consumers.";
+    } else if (score >= 70) {
+      scoreNote = "Fairly easy to read.";
+    } else if (score >= 60) {
+      scoreNote = "Plain English. Easily understood by 13- to 15-year-old students.";
+    } else if (score >= 50) {
+      scoreNote = "Fairly difficult to read.";
+    } else if (score >= 30) {
+      scoreNote = "Difficult to read.";
+    } else if (score >= 10) {
+      scoreNote = "Very difficult to read. Best understood by university graduates.";
+    } else {
+      scoreNote = "Extremely difficult to read. Best understood by university graduates.";
+    }
+    return scoreNote;
+  }
 }
 
 function getSelectedText() {
