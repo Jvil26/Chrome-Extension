@@ -20,8 +20,10 @@ function init() {
   speller.train(config.trainData);
   var text = inputs[0].value.split(config.code).reverse()[0];
   var dictionary = config.dictionary;
-  var misspelledWords = findMisspelledWords(text, dictionary);
+  var wordList = config.wordList;
+  var misspelledWords = findMisspelledWords(text, wordList);
   var score = calc_readingScore(text);
+  var moreDetails = sentences_readingScore(text);
   var scoreNote = scoreNotes(score, 'notes');
   var schoolLevel = scoreNotes(score, 'level');
   // alert(text)
@@ -91,7 +93,7 @@ function init() {
   document.head.appendChild(link);
 
 
-  const backButtonHtml = '<span><i class="fas fa-chevron-left" id="backButton" style="position: absolute; top: 10px; margin: 10px, 0px, 25px 5px; left: 5px"></i></span>';
+  const backButtonHtml = '<span><i class="backButton fas fa-chevron-left" style="position: absolute; top: 10px; margin: 10px, 0px, 25px 5px; left: 5px"></i></span>';
 
   const homePage = document.createElement('div');
     var finalHTML = '<div id="cheta-flt-dv"><p class="cheta-flt-p">ChETA</p><br>';
@@ -99,7 +101,9 @@ function init() {
       finalHTML += '<p class="cheta-pfnt">Chars: <span id="cheta-data-charcount">'+text.length+'</span></p><br><hr>';
       finalHTML += '<p class="cheta-pfnt">Reading Score: <span id="cheta-data-score">'+score+'</span></p><br>';
       finalHTML += '<p class="cheta-pfnt">School Level (US): <span id="cheta-data-schoolLevel">'+schoolLevel+'</span></p><br>';
-      finalHTML += '<p class="cheta-pfnt">Note: <span id="cheta-data-scoreNote">'+scoreNote+'</span></p><br><hr>';
+      finalHTML += '<p class="cheta-pfnt">Note: <span id="cheta-data-scoreNote">'+scoreNote+'</span></p><br>';
+      finalHTML += '<button class="cheta-pfnt" id="learnMore">Learn More</button>';
+      finalHTML += '<br><hr>';
       finalHTML += '<p class="cheta-pfnt">Selected Text: <span id="cheta-data-selectedText"></span></p><br><hr>';
       finalHTML += '<button class="cheta-pfnt" id="misspelledWords">Misspelled Words</button>';
       finalHTML += '</div>';
@@ -107,25 +111,51 @@ function init() {
   document.body.appendChild(homePage);
 
   const misspelled_words_page = document.createElement('div');
-    var fHtml = '<div style="visibility: hidden" id="cheta-misspelledWords-dv"><p class="cheta-flt-p" style="margin-top: 25px; margin-bottom: 0">Misspelled Words</p><br>';
+    var fHtml = '<div style="visibility: hidden" id="cheta-misspelledWords-dv"><p class="cheta-flt-p">Misspelled Words</p>';
       fHtml += backButtonHtml;
       misspelledWords.forEach(obj => (
-        fHtml += '<p>'+obj.word+'</p>',
+        fHtml += '<p class="cheta-pfnt">'+obj.word+'</p>',
         fHtml += '<p class="cheta-pfnt">Did you mean: <span id="cheta-data-misspelledWord">'+obj.candidate+'</span></p><hr>'
       ));
   misspelled_words_page.innerHTML = fHtml;
   document.body.appendChild(misspelled_words_page);
+
+  const learn_more_page = document.createElement('div');
+    var learn_more_html = '<div style="visibility: hidden; height: 40vw; width: 25vw" id="cheta-learnMore-dv"><p class="cheta-flt-p">Learn More</p>';
+    learn_more_html += backButtonHtml;
+    if (moreDetails.length > 0) {
+      for (let i = 0; i < moreDetails.length; i++) {
+        learn_more_html += '<p class="cheta-pfnt">"<span>'+moreDetails[i].sentence+'</span>"</p><br><br>'
+        if (moreDetails[i].sentenceLength >= 50) {
+          learn_more_html += '<p class="cheta-pfnt">This sentence is too long (<span>'+moreDetails[i].sentenceLength+'</span> words) - please consider revising. Low Readability Score (<span>'+moreDetails[i].readingScore+'</span>). Have you thought about using smaller words and shorter sentences?</p><hr>';
+        } else {
+          learn_more_html += '<p class="cheta-pfnt">Low Readability Score (<span>'+moreDetails[i].readingScore+'</span>). Have you thought about using smaller words and shorter sentences?</p><hr>';
+        }
+      }
+    } else {
+      learn_more_html += '<p class="cheta-pfnt">Your sentences have a good length and are very readable</p>';
+    }
+  learn_more_page.innerHTML = learn_more_html;
+  document.body.appendChild(learn_more_page);
 
   document.getElementById('misspelledWords').onclick = () => {
     document.getElementById('cheta-flt-dv').style.visibility = 'hidden';
     document.getElementById('cheta-misspelledWords-dv').style.visibility = 'visible';
   };
 
-  document.getElementById('backButton').onclick = () => {
-    document.getElementById('cheta-flt-dv').style.visibility = 'visible';
-    document.getElementById('cheta-misspelledWords-dv').style.visibility = 'hidden';
+  document.getElementById('learnMore').onclick = () => {
+    document.getElementById('cheta-flt-dv').style.visibility = 'hidden';
+    document.getElementById('cheta-learnMore-dv').style.visibility = 'visible';
   };
 
+  var allBackButtons = document.getElementsByClassName('backButton');
+  for (let i = 0; i < allBackButtons.length; i++) {
+    allBackButtons[i].onclick = () => {
+      document.getElementById('cheta-flt-dv').style.visibility = 'visible';
+      document.getElementById('cheta-misspelledWords-dv').style.visibility = 'hidden';
+      document.getElementById('cheta-learnMore-dv').style.visibility = 'hidden';
+    }
+  }
 }
 
 
@@ -161,6 +191,26 @@ function calc_readingScore(text) {
   }
   var score = 206.835 - 1.015 * (words.length / text.split(/[.!?]+\s/).length) - 84.6 * (totalSyllables / words.length);
   return Math.round(score * 10) / 10;
+}
+
+function sentences_readingScore(text) {
+  const sentences = text.replace(/([.?!])\s*(?=[A-Z])/g, "$1|").split("|");
+  const details = [];
+  var obj = { sentence: '', readingScore: 0, sentenceLength: 0 };
+  var count = 0;
+  for (let i = 0; i < sentences.length; i++) {
+    var readingScore = calc_readingScore(sentences[i]);
+    if (readingScore <= 40) {
+      obj.sentence = sentences[i];
+      obj.readingScore = calc_readingScore(sentences[i]);
+      console.log(sentences[i].length);
+      obj.sentenceLength = sentences[i].replace(/\s/g, '').length;
+      details[count] = { ...obj };
+      count++;
+    }
+  }
+  console.log(details);
+  return details;
 }
 
 function scoreNotes(score, param) {
@@ -217,16 +267,14 @@ function getSelectedText() {
   this.selectedText = text;
 }
 
-function findMisspelledWords(text, dictionary) {
+function findMisspelledWords(text, wordList) {
   text = text.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"");
   var words = text.split(" ");
   var misspelledWords = [];
   var obj = { word: '', candidate: '' };
   var count = 0;
   for (let i = 0; i < words.length; i++) {
-    words[i] = words[i].charAt(0).toUpperCase() + words[i].slice(1).toLowerCase();
-    var property = words[i];
-    if (!dictionary[property]) {
+    if (!wordList.includes(words[i])) {
       obj.word = words[i];
       obj.candidate = speller.correct(words[i]);
       misspelledWords[count] = { ...obj };
