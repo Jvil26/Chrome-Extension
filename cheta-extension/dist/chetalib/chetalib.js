@@ -18,8 +18,23 @@ function init() {
   }
   speller.train(config.trainData);
   speller.train(config.trainData);
-  var text = inputs[0].value.split(config.code).reverse()[0];
+  var text = '';
+  if (window.location.href.includes('https://docs.google.com')) {
+    var textLength = 0;
+      for (let i = 0; i < inputs[0].length; i++) {
+          text += inputs[0][i].textContent;
+      }
+      text.split(" ").forEach(word => {
+        textLength += word.replace(/\s+/g, '').length;
+      });
+      textLength -= text.split(" ").length + 2;
+  } else {
+    text = inputs[0].value.split(config.code).reverse()[0];
+    textLength = text.length - 1;
+  }
   var dictionary = config.dictionary;
+  var eng_synonyms = config.eng_synonyms;
+  var suggestions = wordSuggestions(text);
   var wordList = config.wordList;
   var misspelledWords = findMisspelledWords(text, wordList);
   var score = calc_readingScore(text);
@@ -28,63 +43,161 @@ function init() {
   var schoolLevel = scoreNotes(score, 'level');
   // alert(text)
   inputs[0].value = inputs[0].value;
-  inputs[0].addEventListener('input', (e) => {
-    var inputs = getInputsByValue(config.code);
-    if(inputs.length == 0) {
-      console.log("Error loading ChETA: Input not found");
-      return;
+  if (!window.location.href.includes('https://docs.google.com')) {
+    inputs[0].addEventListener('input', (e) => {
+      var inputs = getInputsByValue(config.code);
+      if(inputs.length == 0) {
+        console.log("Error loading ChETA: Input not found");
+        return;
+      }
+      var text = inputs[0].value.split(config.code).reverse()[0];
+      var textLength = text.length - 1;
+      var wordCountSpan = document.getElementById("cheta-data-wordcount");
+      wordCountSpan.textContent = ""+text.split(" ").length;
+
+      var charCountSpan = document.getElementById("cheta-data-charcount");
+      charCountSpan.textContent = ""+textLength;
+
+      moreDetails = sentences_readingScore(text);
+      var learn_more = document.getElementById('learnDiv');
+      learn_more.innerHTML = '';
+      if (moreDetails.length > 0) {
+        for (let i = 0; i < moreDetails.length; i++) {
+          learn_more.innerHTML += '<p class="cheta-pfnt">"<span class="details_sentence">'+moreDetails[i].sentence+'</span>"</p><br>'
+          if (moreDetails[i].sentenceLength >= 23 && moreDetails[i].readingScore < 50) {
+            learn_more.innerHTML += '<p class="cheta-pfnt">This sentence is too long (<span class="details_tooLongAndHardToRead">'+moreDetails[i].sentenceLength+'</span> words) - please consider revising. Low Readability Score (<span class="details_readingScore">'+moreDetails[i].readingScore+'</span>). Have you thought about using smaller words and shorter sentences?</p><hr>';
+          } else if (moreDetails[i].readingScore <= 50) {
+            learn_more.innerHTML += '<p class="cheta-pfnt">Low Readability Score (<span class="details_hardToRead">'+moreDetails[i].readingScore+'</span>). Have you thought about using smaller words or shorter sentences?</p><hr>';
+          } else {
+            learn_more.innerHTML += '<p class="cheta-pfnt">This sentence is too long (<span class="details_tooLong">'+moreDetails[i].sentenceLength+'</span> words) - please consider revising. Have you thought about using smaller words and shorter sentences?</p><hr>';
+          }
+        }
+      } else {
+        learn_more.innerHTML += '<p class="cheta-pfnt" id="details_good">Your sentences have a good length and are very readable</p>';
+      }
+
+      var score = calc_readingScore(text);
+      var readingScoreSpan = document.getElementById("cheta-data-score");
+      var schoolLevelSpan = document.getElementById("cheta-data-schoolLevel");
+      var scoreNoteSpan = document.getElementById("cheta-data-scoreNote");
+      if (score >= 90) {
+        readingScoreSpan.textContent = ""+score;
+        scoreNoteSpan.textContent = "Very easy to read. Easily understood by an average 11-year-old student.";
+        schoolLevelSpan.textContent = "5th Grade";
+      } else if (score >= 80) {
+        readingScoreSpan.textContent = ""+score;
+        scoreNoteSpan.textContent = "Easy to read. Conversational English for consumers.";
+        schoolLevelSpan.textContent = "6th Grade";
+      } else if (score >= 70) {
+        readingScoreSpan.textContent = ""+score;
+        scoreNoteSpan.textContent = "Fairly easy to read.";
+        schoolLevelSpan.textContent = "7th Grade";
+      } else if (score >= 60) {
+        readingScoreSpan.textContent = ""+score;
+        scoreNoteSpan.textContent = "Plain English. Easily understood by 13- to 15-year-old students.";
+        schoolLevelSpan.textContent = "8th Grade & 9th Grade";
+      } else if (score >= 50) {
+        readingScoreSpan.textContent = ""+score;
+        scoreNoteSpan.textContent = "Fairly difficult to read.";
+        schoolLevelSpan.textContent = "10th to 12th Grade";
+      } else if (score >= 30) {
+        readingScoreSpan.textContent = ""+score;
+        scoreNoteSpan.textContent = "Difficult to read.";
+        schoolLevelSpan.textContent = "College";
+      } else if (score >= 10) {
+        readingScoreSpan.textContent = ""+score;
+        scoreNoteSpan.textContent = "Very difficult to read. Best understood by university graduates.";
+        schoolLevelSpan.textContent = "College Graduate";
+      } else {
+        readingScoreSpan.textContent = ""+score;
+        scoreNoteSpan.textContent = "Extremely difficult to read. Best understood by university graduates.";
+        schoolLevelSpan.textContent = "Professional";
+      }
+    });
+    inputs[0].addEventListener('mouseup', e => {
+      getSelectedText();
+      var selectedTextSpan = document.getElementById("cheta-data-selectedText");
+      selectedTextSpan.textContent = ""+this.selectedText;
+    });
+  } else {
+      setInterval(() => {
+        var inputs = getInputsByValue(config.code);
+        var newText = '';
+        for (let i = 0; i < inputs[0].length; i++) {
+          newText += inputs[0][i].textContent;
+        }
+        if (newText != text) {
+          text = newText;
+          console.log('run');
+          var textLength = 0;
+          newText.split(" ").forEach(word => {
+            textLength += word.replace(/\s+/g, '').length;
+          });
+          textLength -= newText.split(" ").length + 2;
+          var wordCountSpan = document.getElementById("cheta-data-wordcount");
+          wordCountSpan.textContent = ""+newText.split(" ").length;
+
+          var charCountSpan = document.getElementById("cheta-data-charcount");
+          charCountSpan.textContent = ""+textLength;
+
+          moreDetails = sentences_readingScore(newText);
+          var learn_more = document.getElementById('learnDiv');
+          learn_more.innerHTML = '';
+          if (moreDetails.length > 0) {
+            for (let i = 0; i < moreDetails.length; i++) {
+              learn_more.innerHTML += '<p class="cheta-pfnt">"<span class="details_sentence">'+moreDetails[i].sentence+'</span>"</p><br>'
+              if (moreDetails[i].sentenceLength >= 23 && moreDetails[i].readingScore < 50) {
+                learn_more.innerHTML += '<p class="cheta-pfnt">This sentence is too long (<span class="details_tooLongAndHardToRead">'+moreDetails[i].sentenceLength+'</span> words) - please consider revising. Low Readability Score (<span class="details_readingScore">'+moreDetails[i].readingScore+'</span>). Have you thought about using smaller words and shorter sentences?</p><hr>';
+              } else if (moreDetails[i].readingScore <= 50) {
+                learn_more.innerHTML += '<p class="cheta-pfnt">Low Readability Score (<span class="details_hardToRead">'+moreDetails[i].readingScore+'</span>). Have you thought about using smaller words or shorter sentences?</p><hr>';
+              } else {
+                learn_more.innerHTML += '<p class="cheta-pfnt">This sentence is too long (<span class="details_tooLong">'+moreDetails[i].sentenceLength+'</span> words) - please consider revising. Have you thought about using smaller words and shorter sentences?</p><hr>';
+              }
+            }
+          } else {
+            learn_more.innerHTML += '<p class="cheta-pfnt" id="details_good">Your sentences have a good length and are very readable</p>';
+          }
+
+          var score = calc_readingScore(newText);
+          var readingScoreSpan = document.getElementById("cheta-data-score");
+          var schoolLevelSpan = document.getElementById("cheta-data-schoolLevel");
+          var scoreNoteSpan = document.getElementById("cheta-data-scoreNote");
+          if (score >= 90) {
+            readingScoreSpan.textContent = ""+score;
+            scoreNoteSpan.textContent = "Very easy to read. Easily understood by an average 11-year-old student.";
+            schoolLevelSpan.textContent = "5th Grade";
+          } else if (score >= 80) {
+            readingScoreSpan.textContent = ""+score;
+            scoreNoteSpan.textContent = "Easy to read. Conversational English for consumers.";
+            schoolLevelSpan.textContent = "6th Grade";
+          } else if (score >= 70) {
+            readingScoreSpan.textContent = ""+score;
+            scoreNoteSpan.textContent = "Fairly easy to read.";
+            schoolLevelSpan.textContent = "7th Grade";
+          } else if (score >= 60) {
+            readingScoreSpan.textContent = ""+score;
+            scoreNoteSpan.textContent = "Plain English. Easily understood by 13- to 15-year-old students.";
+            schoolLevelSpan.textContent = "8th Grade & 9th Grade";
+          } else if (score >= 50) {
+            readingScoreSpan.textContent = ""+score;
+            scoreNoteSpan.textContent = "Fairly difficult to read.";
+            schoolLevelSpan.textContent = "10th to 12th Grade";
+          } else if (score >= 30) {
+            readingScoreSpan.textContent = ""+score;
+            scoreNoteSpan.textContent = "Difficult to read.";
+            schoolLevelSpan.textContent = "College";
+          } else if (score >= 10) {
+            readingScoreSpan.textContent = ""+score;
+            scoreNoteSpan.textContent = "Very difficult to read. Best understood by university graduates.";
+            schoolLevelSpan.textContent = "College Graduate";
+          } else {
+            readingScoreSpan.textContent = ""+score;
+            scoreNoteSpan.textContent = "Extremely difficult to read. Best understood by university graduates.";
+            schoolLevelSpan.textContent = "Professional";
+          }
+        }
+      }, 2000);
     }
-    var text = inputs[0].value.split(config.code).reverse()[0];
-    var wordCountSpan = document.getElementById("cheta-data-wordcount");
-    wordCountSpan.textContent = ""+text.split(" ").length;
-
-    var charCountSpan = document.getElementById("cheta-data-charcount");
-    charCountSpan.textContent = ""+text.length;
-
-    var score = calc_readingScore(text);
-    var readingScoreSpan = document.getElementById("cheta-data-score");
-    var schoolLevelSpan = document.getElementById("cheta-data-schoolLevel");
-    var scoreNoteSpan = document.getElementById("cheta-data-scoreNote");
-    if (score >= 90) {
-      readingScoreSpan.textContent = ""+score;
-      scoreNoteSpan.textContent = "Very easy to read. Easily understood by an average 11-year-old student.";
-      schoolLevelSpan.textContent = "5th Grade";
-    } else if (score >= 80) {
-      readingScoreSpan.textContent = ""+score;
-      scoreNoteSpan.textContent = "Easy to read. Conversational English for consumers.";
-      schoolLevelSpan.textContent = "6th Grade";
-    } else if (score >= 70) {
-      readingScoreSpan.textContent = ""+score;
-      scoreNoteSpan.textContent = "Fairly easy to read.";
-      schoolLevelSpan.textContent = "7th Grade";
-    } else if (score >= 60) {
-      readingScoreSpan.textContent = ""+score;
-      scoreNoteSpan.textContent = "Plain English. Easily understood by 13- to 15-year-old students.";
-      schoolLevelSpan.textContent = "8th Grade & 9th Grade";
-    } else if (score >= 50) {
-      readingScoreSpan.textContent = ""+score;
-      scoreNoteSpan.textContent = "Fairly difficult to read.";
-      schoolLevelSpan.textContent = "10th to 12th Grade";
-    } else if (score >= 30) {
-      readingScoreSpan.textContent = ""+score;
-      scoreNoteSpan.textContent = "Difficult to read.";
-      schoolLevelSpan.textContent = "College";
-    } else if (score >= 10) {
-      readingScoreSpan.textContent = ""+score;
-      scoreNoteSpan.textContent = "Very difficult to read. Best understood by university graduates.";
-      schoolLevelSpan.textContent = "College Graduate";
-    } else {
-      readingScoreSpan.textContent = ""+score;
-      scoreNoteSpan.textContent = "Extremely difficult to read. Best understood by university graduates.";
-      schoolLevelSpan.textContent = "Professional";
-    }
-  });
-
-  inputs[0].addEventListener('mouseup', e => {
-    getSelectedText();
-    var selectedTextSpan = document.getElementById("cheta-data-selectedText");
-    selectedTextSpan.textContent = ""+this.selectedText;
-  });
 
   var link = document.createElement('link');
   link.type = 'text/css';
@@ -96,16 +209,17 @@ function init() {
   const backButtonHtml = '<span><i class="backButton fas fa-chevron-left" style="position: absolute; top: 10px; margin: 10px, 0px, 25px 5px; left: 5px"></i></span>';
 
   const homePage = document.createElement('div');
-    var finalHTML = '<div id="cheta-flt-dv"><p class="cheta-flt-p">ChETA</p><br>';
+    var finalHTML = '<div id="cheta-flt-dv"><p class="cheta-flt-p">GUBER</p><br>';
       finalHTML += '<p class="cheta-pfnt">Words: <span id="cheta-data-wordcount">'+text.split(" ").length+'</span></p>';
-      finalHTML += '<p class="cheta-pfnt">Chars: <span id="cheta-data-charcount">'+text.length+'</span></p><br><hr>';
+      finalHTML += '<p class="cheta-pfnt">Chars: <span id="cheta-data-charcount">'+textLength+'</span></p><br><hr>';
       finalHTML += '<p class="cheta-pfnt">Reading Score: <span id="cheta-data-score">'+score+'</span></p><br>';
       finalHTML += '<p class="cheta-pfnt">School Level (US): <span id="cheta-data-schoolLevel">'+schoolLevel+'</span></p><br>';
-      finalHTML += '<p class="cheta-pfnt">Note: <span id="cheta-data-scoreNote">'+scoreNote+'</span></p><br>';
+      finalHTML += '<p class="cheta-pfnt"><span id="cheta-data-scoreNote">'+scoreNote+'</span></p><br>';
       finalHTML += '<button class="cheta-pfnt" id="learnMore">Learn More</button>';
       finalHTML += '<br><hr>';
       finalHTML += '<p class="cheta-pfnt">Selected Text: <span id="cheta-data-selectedText"></span></p><br><hr>';
       finalHTML += '<button class="cheta-pfnt" id="misspelledWords">Misspelled Words</button>';
+      finalHTML += '<button class="cheta-pfnt" id="suggestions">Suggestions</button>';
       finalHTML += '</div>';
   homePage.innerHTML = finalHTML;
   document.body.appendChild(homePage);
@@ -117,26 +231,55 @@ function init() {
         fHtml += '<p class="cheta-pfnt">'+obj.word+'</p>',
         fHtml += '<p class="cheta-pfnt">Did you mean: <span id="cheta-data-misspelledWord">'+obj.candidate+'</span></p><hr>'
       ));
+      fHtml += '</div>'
   misspelled_words_page.innerHTML = fHtml;
   document.body.appendChild(misspelled_words_page);
 
   const learn_more_page = document.createElement('div');
     var learn_more_html = '<div style="visibility: hidden; height: 40vw; width: 25vw" id="cheta-learnMore-dv"><p class="cheta-flt-p">Learn More</p>';
     learn_more_html += backButtonHtml;
+    learn_more_html += '<div id="learnDiv">';
     if (moreDetails.length > 0) {
       for (let i = 0; i < moreDetails.length; i++) {
-        learn_more_html += '<p class="cheta-pfnt">"<span>'+moreDetails[i].sentence+'</span>"</p><br><br>'
-        if (moreDetails[i].sentenceLength >= 50) {
-          learn_more_html += '<p class="cheta-pfnt">This sentence is too long (<span>'+moreDetails[i].sentenceLength+'</span> words) - please consider revising. Low Readability Score (<span>'+moreDetails[i].readingScore+'</span>). Have you thought about using smaller words and shorter sentences?</p><hr>';
+        learn_more_html += '<p class="cheta-pfnt">"<span class="details_sentence">'+moreDetails[i].sentence+'</span>"</p><br>'
+        if (moreDetails[i].sentenceLength >= 23 && moreDetails[i].readingScore < 50) {
+          learn_more_html += '<p class="cheta-pfnt">This sentence is too long (<span class="details_tooLongAndHardToRead">'+moreDetails[i].sentenceLength+'</span> words) - please consider revising. Low Readability Score (<span class="details_readingScore">'+moreDetails[i].readingScore+'</span>). Have you thought about using smaller words and shorter sentences?</p><hr>';
+        } else if (moreDetails[i].readingScore <= 50) {
+          learn_more_html += '<p class="cheta-pfnt">Low Readability Score (<span class="details_hardToRead">'+moreDetails[i].readingScore+'</span>). Have you thought about using smaller words or shorter sentences?</p><hr>';
         } else {
-          learn_more_html += '<p class="cheta-pfnt">Low Readability Score (<span>'+moreDetails[i].readingScore+'</span>). Have you thought about using smaller words and shorter sentences?</p><hr>';
+          learn_more_html += '<p class="cheta-pfnt">This sentence is too long (<span class="details_tooLong">'+moreDetails[i].sentenceLength+'</span> words) - please consider revising. Have you thought about using smaller words and shorter sentences?</p><hr>';
         }
       }
     } else {
-      learn_more_html += '<p class="cheta-pfnt">Your sentences have a good length and are very readable</p>';
+      learn_more_html += '<p class="cheta-pfnt" id="details_good">Your sentences have a good length and are very readable</p>';
     }
+    learn_more_html += '</div>';
+    learn_more_html += '</div>';
   learn_more_page.innerHTML = learn_more_html;
   document.body.appendChild(learn_more_page);
+
+  const suggestionsPage = document.createElement('div');
+    var suggestions_html = '<div style="visibility: hidden; height: 40vw; width: 25vw" id="cheta-suggestions-dv"><p class="cheta-flt-p">Suggestions</p>';
+    suggestions_html += backButtonHtml;
+    suggestions_html += '<div id="suggestionsDiv">';
+    if (moreDetails.length > 0) {
+      for (let i = 0; i < moreDetails.length; i++) {
+        suggestions_html += '<p class="cheta-pfnt">"<span class="details_sentence">'+moreDetails[i].sentence+'</span>"</p><br>'
+        if (moreDetails[i].sentenceLength >= 23 && moreDetails[i].readingScore < 50) {
+          suggestions_html += '<p class="cheta-pfnt">This sentence is too long (<span class="details_tooLongAndHardToRead">'+moreDetails[i].sentenceLength+'</span> words) - please consider revising. Low Readability Score (<span class="details_readingScore">'+moreDetails[i].readingScore+'</span>). Have you thought about using smaller words and shorter sentences?</p><hr>';
+        } else if (moreDetails[i].readingScore <= 50) {
+          suggestions_html += '<p class="cheta-pfnt">Low Readability Score (<span class="details_hardToRead">'+moreDetails[i].readingScore+'</span>). Have you thought about using smaller words or shorter sentences?</p><hr>';
+        } else {
+          suggestions_html += '<p class="cheta-pfnt">This sentence is too long (<span class="details_tooLong">'+moreDetails[i].sentenceLength+'</span> words) - please consider revising. Have you thought about using smaller words and shorter sentences?</p><hr>';
+        }
+      }
+    } else {
+      suggestions_html += '<p class="cheta-pfnt" id="details_good">Your sentences have a good length and are very readable</p>';
+    }
+    suggestions_html += '</div>';
+    suggestions_html += '</div>';
+  suggestionsPage.innerHTML = suggestions_html;
+  document.body.appendChild(suggestionsPage);
 
   document.getElementById('misspelledWords').onclick = () => {
     document.getElementById('cheta-flt-dv').style.visibility = 'hidden';
@@ -148,12 +291,18 @@ function init() {
     document.getElementById('cheta-learnMore-dv').style.visibility = 'visible';
   };
 
+  document.getElementById('suggestions').onclick = () => {
+    document.getElementById('cheta-flt-dv').style.visibility = 'hidden';
+    document.getElementById('cheta-suggestions-dv').style.visibility = 'visible';
+  };
+
   var allBackButtons = document.getElementsByClassName('backButton');
   for (let i = 0; i < allBackButtons.length; i++) {
     allBackButtons[i].onclick = () => {
       document.getElementById('cheta-flt-dv').style.visibility = 'visible';
       document.getElementById('cheta-misspelledWords-dv').style.visibility = 'hidden';
       document.getElementById('cheta-learnMore-dv').style.visibility = 'hidden';
+      document.getElementById('cheta-suggestions-dv').style.visibility = 'hidden';
     }
   }
 }
@@ -161,18 +310,57 @@ function init() {
 
 function getInputsByValue(value)
 {
+    if (window.location.href.includes('https://docs.google.com')) {
+      var results = [];
+      var googleDocsSpan = document.getElementsByClassName('kix-wordhtmlgenerator-word-node');
+    results.push(googleDocsSpan);
+  } else {
     var allInputs = document.getElementsByTagName("input");
     var results = [];
     for(var x=0;x<allInputs.length;x++)
-        if(allInputs[x].value.includes(value))
+        if(allInputs[x].value.includes(value)) {
             results.push(allInputs[x]);
+        }
 
     var allTextArea = document.getElementsByTagName("textarea");
     for(var x=0;x<allTextArea.length;x++)
-        if(allTextArea[x].value.includes(value))
-            results.push(allTextArea[x]);
-
+        if(allTextArea[x].value.includes(value)) {
+          results.push(allTextArea[x]);
+        }
+  }
+  
     return results;
+}
+
+function wordSuggestions(text) {
+  
+}
+
+function highlight(text) {
+  console.log(text);
+  var googleDocsSpan = document.getElementsByClassName('kix-wordhtmlgenerator-word-node');
+  for (let i = 0; i < googleDocsSpan.length; i++) {
+    if (googleDocsSpan[i].innerHTML.includes(text)) {
+      index1 = i;
+      break;
+    }
+  }
+  var inputText = googleDocsSpan[index1];
+  var innerHTML = inputText.innerHTML;
+  var index = innerHTML.indexOf(text);
+  if (index >= 0) { 
+   innerHTML = innerHTML.substring(0,index) + "<span class='highlight' style='background-color:yellow;'>" + innerHTML.substring(index,index+text.length) + "</span>" + innerHTML.substring(index + text.length);
+   inputText.innerHTML = innerHTML;
+  }
+}
+
+function identifyBigWords(sentence) {
+  var words = sentence.split(" ");
+  for (let i = 0; i < words.length; i++) {
+    if (calc_syllables(words[i]) >= 3) {
+      highlight(words[i]);
+    }
+  }
 }
 
 function calc_syllables(word) {
@@ -194,22 +382,23 @@ function calc_readingScore(text) {
 }
 
 function sentences_readingScore(text) {
-  const sentences = text.replace(/([.?!])\s*(?=[A-Z])/g, "$1|").split("|");
+  const sentences = text.match( /[^\.!\?]+[\.!\?]+/g );
   const details = [];
   var obj = { sentence: '', readingScore: 0, sentenceLength: 0 };
   var count = 0;
-  for (let i = 0; i < sentences.length; i++) {
-    var readingScore = calc_readingScore(sentences[i]);
-    if (readingScore <= 40) {
-      obj.sentence = sentences[i];
-      obj.readingScore = calc_readingScore(sentences[i]);
-      console.log(sentences[i].length);
-      obj.sentenceLength = sentences[i].replace(/\s/g, '').length;
-      details[count] = { ...obj };
-      count++;
+  if (sentences) {
+    for (let i = 0; i < sentences.length; i++) {
+      var readingScore = calc_readingScore(sentences[i]);
+      if (readingScore <= 50 || sentences[i].split(" ").length > 23) {
+        identifyBigWords(sentences[i]);
+        obj.sentence = sentences[i];
+        obj.readingScore = calc_readingScore(sentences[i]);
+        obj.sentenceLength = sentences[i].split(" ").length;
+        details[count] = { ...obj };
+        count++;
+      }
     }
   }
-  console.log(details);
   return details;
 }
 
@@ -274,11 +463,13 @@ function findMisspelledWords(text, wordList) {
   var obj = { word: '', candidate: '' };
   var count = 0;
   for (let i = 0; i < words.length; i++) {
-    if (!wordList.includes(words[i])) {
-      obj.word = words[i];
-      obj.candidate = speller.correct(words[i]);
-      misspelledWords[count] = { ...obj };
-      count++;
+    if (!wordList.includes(words[i].toLowerCase())) {
+      if (speller.correct(words[i] != words[i])) {
+        obj.word = words[i];
+        obj.candidate = speller.correct(words[i]);
+        misspelledWords[count] = { ...obj };
+        count++;
+      }
     }
   }
   return misspelledWords;

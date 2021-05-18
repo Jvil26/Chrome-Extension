@@ -3,6 +3,7 @@ import React, { Component } from 'react';
 import dict from './dict.json';
 import trainData from './big.js';
 import allWords from './allWords.js';
+import eng_synonyms from './eng_synonyms.json';
 
 class Home extends Component {
   constructor(props){
@@ -12,6 +13,7 @@ class Home extends Component {
       dictionary: dict,
       trainData: trainData,
       wordList: allWords,
+      eng_synonyms: eng_synonyms,
       inputs: {
         priceperword: '0.20'
       }
@@ -23,14 +25,15 @@ class Home extends Component {
       code: this.state.uniqueCode,
       dictionary: this.state.dictionary,
       trainData: this.state.trainData,
-      wordList: this.state.wordList
+      wordList: this.state.wordList,
+      eng_synonyms: this.state.eng_synonyms
     };
 
     if(this.state.inputs.priceperword > 0) {
       config['priceperword'] = this.state.inputs.priceperword;
     }
 
-    var css = "@import url('https://fonts.googleapis.com/css2?family=Special+Elite&display=swap'); #cheta-flt-dv { padding: 8px; z-index: 999; position: fixed; width: 140px; bottom: 10%; right: 40px; background-color: #B0FF8B; color: black; border-radius: 20px; text-align: center; box-shadow: 2px 2px 3px #999; } #cheta-misspelledWords-dv { padding: 8px; z-index: 999; position: fixed; width: 140px; bottom: 10%; right: 40px; background-color: #B0FF8B; color: black; border-radius: 20px; text-align: center; box-shadow: 2px 2px 3px #999; } #cheta-learnMore-dv { padding: 8px; z-index: 999; position: fixed; width: 140px; bottom: 10%; right: 40px; background-color: #B0FF8B; color: black; border-radius: 20px; text-align: center; box-shadow: 2px 2px 3px #999; } .cheta-flt-p { margin-top: 25px; margin-bottom: 25px; font-family: 'Special Elite'; font-size: 22px; font-size: 1.5vw } .cheta-pfnt { margin: 2px; font-family: 'Special Elite'; font-size: 14px; font-size: 1vw }";
+    var css = "@import url('https://fonts.googleapis.com/css2?family=Special+Elite&display=swap'); #cheta-flt-dv { overflow-y:auto; padding: 8px; z-index: 999; position: fixed; width: 140px; bottom: 10%; right: 40px; background-color: #B0FF8B; color: black; border-radius: 20px; text-align: center; box-shadow: 2px 2px 3px #999; } #cheta-misspelledWords-dv { overflow-y:auto; padding: 8px; z-index: 999; position: fixed; width: 140px; bottom: 25%; right: 40px; background-color: #B0FF8B; color: black; border-radius: 20px; text-align: center; box-shadow: 2px 2px 3px #999; } #cheta-learnMore-dv { overflow-y:auto; padding: 8px; z-index: 999; position: fixed; width: 140px; bottom: 10%; right: 40px; background-color: #B0FF8B; color: black; border-radius: 20px; text-align: center; box-shadow: 2px 2px 3px #999; } #cheta-suggestions-dv { overflow-y:auto; padding: 8px; z-index: 999; position: fixed; width: 140px; bottom: 25%; right: 40px; background-color: #B0FF8B; color: black; border-radius: 20px; text-align: center; box-shadow: 2px 2px 3px #999; } .cheta-flt-p { margin-top: 25px; margin-bottom: 25px; font-family: 'Special Elite'; font-size: 22px; font-size: 1.5vw } .cheta-pfnt { margin: 2px; font-family: 'Special Elite'; font-size: 14px; font-size: 1vw }";
     chrome.tabs.insertCSS({code: css});
 
     chrome.tabs.executeScript({
