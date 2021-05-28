@@ -9,11 +9,12 @@ function init() {
   console.log(config);
   var s = document.createElement('script');
   // TODO: add "script.js" to web_accessible_resources in manifest.json
-  s.src = chrome.runtime.getURL('script.js');
+  s.src = chrome.runtime.getURL('googleDocsUtil.js');
   (document.head || document.documentElement).appendChild(s);
   s.onload = function() {
     s.parentNode.removeChild(s);
   };
+  
   if(!config.code) {
     console.log("Error loading ChETA: Unique code not found")
     return;
@@ -37,11 +38,8 @@ function init() {
     textLength = text.length - 1;
   }
   var eng_synonyms = config.eng_synonyms;
-  this.suggestions = [];
+  this.suggestions = [[], []];
   var moreDetails = sentences_readingScore(text, eng_synonyms);
-  console.log(text);
-  var dictionary = config.dictionary;
-  console.log(eng_synonyms);
   var wordList = config.wordList;
   var misspelledWords = findMisspelledWords(text, wordList);
   var score = calc_readingScore(text);
@@ -143,8 +141,9 @@ function init() {
           var charCountSpan = document.getElementById("cheta-data-charcount");
           charCountSpan.textContent = ""+textLength;
           
-          this.suggestions = [];
+          this.suggestions = [[],[]];
           var moreDetails = sentences_readingScore(text, eng_synonyms);
+          console.log(this.suggestions);
           var learn_more_page = document.getElementById('learnDiv');
           var newLearn_more_page = '';
     if (moreDetails.length > 0) {
@@ -176,25 +175,68 @@ function init() {
     }
   }
 
-  var suggestionsPage = document.getElementById('suggestionsDiv');
-  var newSuggestionsPage = '';
-    if (this.suggestions.length > 0) {
-      this.suggestions.forEach(suggestion => {
-        newSuggestionsPage += '<div class="suggestions card" style="box-shadow: 10px 5px 5px red; border-radius:10px;">';
-        newSuggestionsPage += '<p class="cheta-pfnt">"<span class="suggestions_word" style="font-weight: 500; font-size: 1.3vw">'+suggestion.word+'</span>"</p><br>';
-        suggestion.synonyms.forEach(synonym => {
-          newSuggestionsPage += '<button class="cheta-pfnt synonymsButtons button" id="'+suggestion.word+'">'+synonym+'</button>';
-        });
-        newSuggestionsPage += '<br>';
-        newSuggestionsPage += '<span><i class="trash-alt fas fa-trash-alt fa-lg button" style="margin-top: 12px; position: absolute; right: 35px;"></i></span>';
-        newSuggestionsPage += '<br></div>';
+  var suggestionsDiv = document.getElementById('suggestionsDiv');
+  var newSuggestionsDiv = '';
+  if (this.suggestions[0].length > 0) {
+    this.suggestions[0].forEach(suggestion => {
+      newSuggestionsDiv += '<div class="suggestions card" style="box-shadow: 10px 5px 5px red; border-radius:10px;>';
+      newSuggestionsDiv += '<p class="cheta-pfnt">"<span class="suggestions_word" style="font-weight: 500; font-size: 1.3vw">'+suggestion.word+'</span>"</p><br>';
+      suggestion.synonyms.forEach(synonym => {
+        newSuggestionsDiv += '<button class="cheta-pfnt synonymsButtons button" id="'+suggestion.word+'">'+synonym+'</button>';
       });
-    } else {
-      newSuggestionsPage += '<p class="cheta-pfnt" id="suggestions">Your sentences have a good length and are very readable</p>';
+      newSuggestionsDiv += '<br>';
+      newSuggestionsDiv += '<span><i class="trash-alt fas fa-trash-alt fa-sm button" style="margin-top: 12px; position: absolute; right: 50px;"></i></span>';
+      newSuggestionsDiv += '<br></div>';
+    });
+  } else {
+    newSuggestionsDiv += '<p class="cheta-pfnt" id="suggestions">Your sentences have a good length and are very readable</p>';
+  }
+  newSuggestionsDiv += '</div>';
+  suggestionsDiv.innerHTML = newSuggestionsDiv;
+  var capitalSuggestionsDiv = document.getElementById('capitalSuggestionsDiv');
+  var newCapitalSuggestionsDiv = '';
+  console.log(this.suggestions[1].length);
+  if (this.suggestions[1].length > 0) {
+    this.suggestions[1].forEach(suggestion => {
+      newCapitalSuggestionsDiv += '<div class="suggestions card" style="box-shadow: 10px 5px 5px red; border-radius:10px;>';
+      newCapitalSuggestionsDiv += '<p class="cheta-pfnt">"<span class="suggestions_word" style="font-weight: 500; font-size: 1.3vw">'+suggestion+'</span>"</p><br>';
+      newCapitalSuggestionsDiv += '<p class="cheta-pfnt">"<span class="suggestions_word" style="font-weight: 500; font-size: 1.3vw">The first letter of this word should be capitalized. Click the button to capitalize the word.</span>"</p><br>';
+      newCapitalSuggestionsDiv += '<button class="cheta-pfnt fixCapitalsButton button" id="'+suggestion+'">Capitalize '+suggestion+'</button>';
+      newCapitalSuggestionsDiv += '<br>';
+      newCapitalSuggestionsDiv += '<span><i class="trash-alt fas fa-trash-alt fa-sm button" style="margin-top: 12px; position: absolute; right: 50px;"></i></span>';
+      newCapitalSuggestionsDiv += '<br></div>';
+    });
+  } else {
+    newCapitalSuggestionsDiv += '<p class="cheta-pfnt" id="suggestions">All your nouns and words are properly capitilized. Good Job!</p>';
+  }
+  newCapitalSuggestionsDiv += '</div>';
+  newCapitalSuggestionsDiv += '</div>';
+  capitalSuggestionsDiv.innerHTML = newCapitalSuggestionsDiv;
+
+  var synonymsButtons = document.getElementsByClassName('synonymsButtons');
+  for (let i = 0; i < synonymsButtons.length; i++) {
+    synonymsButtons.item(i).onclick = () => {
+      var suggestion = synonymsButtons.item(i).textContent;
+      var wordToReplace = synonymsButtons.item(i).id;
+      useSuggestion(wordToReplace, suggestion, inputs);
     }
-    newSuggestionsPage += '</div>';
-    newSuggestionsPage += '</div>';
-  suggestionsPage.innerHTML = newSuggestionsPage;
+  }
+
+  var fixCapitalsButton = document.getElementsByClassName('fixCapitalsButton');
+  for (let i = 0; i < fixCapitalsButton.length; i++) {
+    fixCapitalsButton.item(i).onclick = () => {
+      var wordToCapitilize = fixCapitalsButton.item(i).id;
+      capitlizeWord(wordToCapitilize, inputs);
+    }
+  }
+
+  var trashAltButtons = document.getElementsByClassName('trash-alt');
+  var arr = [...trashAltButtons];
+  for (let i = 0; i < arr.length; i++) {
+    arr[i].onclick = () => {
+      arr[i].parentNode.parentNode.remove();
+    }
+  }
 
           var score = calc_readingScore(newText);
           var readingScoreSpan = document.getElementById("cheta-data-score");
@@ -298,27 +340,59 @@ function init() {
   document.body.appendChild(learn_more_page);
 
   const suggestionsPage = document.createElement('div');
-    var suggestions_html = '<div style="visibility: hidden; height: 40vw; width: 25vw" id="cheta-suggestions-dv"><p class="cheta-flt-p">Suggestions</p>';
+    var suggestions_html = '<div style="visibility: hidden; height: 40vw; width: 25vw" id="cheta-suggestions-dv"><p class="cheta-flt-p" style="font-size: 1.2rem">Suggestions</p>';
     suggestions_html += backButtonHtml;
-    suggestions_html += '<div id="suggestionsDiv">';
-    if (this.suggestions.length > 0) {
-      this.suggestions.forEach(suggestion => {
+    suggestions_html += '<button type="button" class="collapsible" style="font-size: 0.9rem">Synonym Suggestions</button>';
+    suggestions_html += '<div id="suggestionsDiv" class="content">';
+    if (this.suggestions[0].length > 0) {
+      this.suggestions[0].forEach(suggestion => {
         suggestions_html += '<div class="suggestions card" style="box-shadow: 10px 5px 5px red; border-radius:10px;>';
         suggestions_html += '<p class="cheta-pfnt">"<span class="suggestions_word" style="font-weight: 500; font-size: 1.3vw">'+suggestion.word+'</span>"</p><br>';
         suggestion.synonyms.forEach(synonym => {
           suggestions_html += '<button class="cheta-pfnt synonymsButtons button" id="'+suggestion.word+'">'+synonym+'</button>';
         });
         suggestions_html += '<br>';
-        suggestions_html += '<span><i class="trash-alt fas fa-trash-alt fa-lg button" style="margin-top: 12px; position: absolute; right: 35px;"></i></span>';
+        suggestions_html += '<span><i class="trash-alt fas fa-trash-alt fa-sm button" style="margin-top: 12px; position: absolute; right: 50px;"></i></span>';
         suggestions_html += '<br></div>';
       });
     } else {
       suggestions_html += '<p class="cheta-pfnt" id="suggestions">Your sentences have a good length and are very readable</p>';
     }
     suggestions_html += '</div>';
+    suggestions_html += '<button type="button" class="collapsible" style="font-size: 0.9rem">Capitlizing Needed</button>';
+    suggestions_html += '<div id="capitalSuggestionsDiv" class="content">';
+    if (this.suggestions[1].length > 0) {
+      this.suggestions[1].forEach(suggestion => {
+        suggestions_html += '<div class="suggestions card" style="box-shadow: 10px 5px 5px red; border-radius:10px;>';
+        suggestions_html += '<p class="cheta-pfnt">"<span class="suggestions_word" style="font-weight: 500; font-size: 1.3vw">'+suggestion+'</span>"</p><br>';
+        suggestions_html += '<p class="cheta-pfnt">"<span class="suggestions_word" style="font-weight: 500; font-size: 1.3vw">The first letter of this word should be capitalized. Click the button to capitalize the word.</span>"</p><br>';
+        suggestions_html += '<button class="cheta-pfnt fixCapitalsButton button" id="'+suggestion+'">Capitalize '+suggestion+'</button>';
+        suggestions_html += '<br>';
+        suggestions_html += '<span><i class="trash-alt fas fa-trash-alt fa-sm button" style="margin-top: 12px; position: absolute; right: 50px;"></i></span>';
+        suggestions_html += '<br></div>';
+      });
+    } else {
+      suggestions_html += '<p class="cheta-pfnt" id="suggestions">All your nouns and words are properly capitilized. Good Job!</p>';
+    }
+    suggestions_html += '</div>';
     suggestions_html += '</div>';
   suggestionsPage.innerHTML = suggestions_html;
   document.body.appendChild(suggestionsPage);
+
+var coll = document.getElementsByClassName("collapsible");
+var i;
+
+for (i = 0; i < coll.length; i++) {
+  coll[i].addEventListener("click", function() {
+    this.classList.toggle("active");
+    var content = this.nextElementSibling;
+    if (content.style.display === "block") {
+      content.style.display = "none";
+    } else {
+      content.style.display = "block";
+    }
+  });
+}
 
   document.getElementById('misspelledWords').onclick = () => {
     document.getElementById('cheta-flt-dv').style.visibility = 'hidden';
@@ -349,6 +423,14 @@ function init() {
       var suggestion = synonymsButtons.item(i).textContent;
       var wordToReplace = synonymsButtons.item(i).id;
       useSuggestion(wordToReplace, suggestion, inputs);
+    }
+  }
+
+  var fixCapitalsButton = document.getElementsByClassName('fixCapitalsButton');
+  for (let i = 0; i < fixCapitalsButton.length; i++) {
+    fixCapitalsButton.item(i).onclick = () => {
+      var wordToCapitilize = fixCapitalsButton.item(i).id;
+      capitlizeWord(wordToCapitilize, inputs);
     }
   }
 
@@ -396,6 +478,17 @@ function getInputsByValue(value)
     return results;
 }
 
+function capitlizeWord(wordToCapitilize, inputs) {
+  for (let i = 0; i < inputs[0].length; i++) {
+    if (inputs[0][i].textContent.includes(wordToCapitilize)) {
+      var index = inputs[0][i].textContent.indexOf(wordToCapitilize);
+      var capitlizedWord = wordToCapitilize.substring(0,1).toUpperCase() + wordToCapitilize.slice(1);
+      inputs[0][i].textContent = inputs[0][i].textContent.substring(0,index) + capitlizedWord + inputs[0][i].textContent.substring(index+capitlizedWord.length);
+      document.dispatchEvent(new CustomEvent('yourCustomEvent', { detail: 'a' }));
+    }
+  }
+}
+
 function useSuggestion(wordToReplace, suggestion, inputs) {
   for (let i = 0; i < inputs[0].length; i++) {
     if (inputs[0][i].textContent.includes(wordToReplace)) {
@@ -410,7 +503,7 @@ function wordSuggestions(words, eng_synonyms) {
   for (let i = 0; i < words.length; i++) {
     const word = words[i].replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"").replace(/\s{2,}/g," ");
     console.log(word);
-    if (this.suggestions.findIndex(obj => obj.word == word) == -1) {
+    if (this.suggestions[0].findIndex(obj => obj.word == word) == -1) {
       const property = word.toLowerCase();
       if (eng_synonyms[property]) {
         console.log(eng_synonyms[property]);
@@ -422,7 +515,7 @@ function wordSuggestions(words, eng_synonyms) {
         }
         if (obj.synonyms.length > 0) {
           obj.synonyms = [...new Set(obj.synonyms)];
-          this.suggestions.push(obj);
+          this.suggestions[0].push(obj);
         }
         obj = { word: '', synonyms: [] };
       }
@@ -430,7 +523,7 @@ function wordSuggestions(words, eng_synonyms) {
   }
 }
 
-function highlight(text) {
+function highlight(text, color, underlineColor) {
   var googleDocsSpan = document.getElementsByClassName('kix-wordhtmlgenerator-word-node');
   for (let i = 0; i < googleDocsSpan.length; i++) {
     if (googleDocsSpan[i].innerHTML.includes(text)) {
@@ -441,9 +534,12 @@ function highlight(text) {
   var inputText = googleDocsSpan[index1];
   var innerHTML = inputText.innerHTML;
   var index = innerHTML.indexOf(text);
-  if (index >= 0) { 
-   innerHTML = innerHTML.substring(0,index) + "<span class='highlight' style='background-color:yellow;'>" + innerHTML.substring(index,index+text.length) + "</span>" + innerHTML.substring(index + text.length);
+  if (index >= 0) {
+   innerHTML = innerHTML.substring(0,index) + "<span class='highlight'>" + innerHTML.substring(index,index+text.length) + "</span>" + innerHTML.substring(index + text.length);
    inputText.innerHTML = innerHTML;
+   var highlightedText = document.getElementsByClassName('highlight');
+   highlightedText[highlightedText.length-1].style.borderBottom = '3px solid '+underlineColor+'';
+   highlightedText[highlightedText.length-1].style.backgroundColor = color;
   }
 }
 
@@ -454,7 +550,7 @@ function identifyBigWords(sentence, eng_synonyms) {
       if (calc_syllables(words[i]) >= 3) {
         newWords.push(words[i]);
         if (window.location.href.includes('https://docs.google.com')) {
-          highlight(words[i]);
+          highlight(words[i], '#B5F9F2', '#1357F6');
         }
       }
     }
@@ -479,6 +575,15 @@ function calc_readingScore(text) {
   return Math.round(score * 10) / 10;
 }
 
+function checkFirstLetter(sentence) {
+  sentence = sentence.trim().replace(/[\u200B-\u200D\uFEFF]/g, '');
+  var firstWord = sentence.split(" ")[0];
+  if (firstWord[0] !== firstWord[0].toUpperCase()) {
+    this.suggestions[1].push(firstWord);
+    highlight(firstWord, '#F6D0CA', '#F61B13');
+  }
+}
+
 function sentences_readingScore(text, eng_synonyms) {
   console.log(eng_synonyms);
   const sentences = text.match( /[^\.!\?]+[\.!\?]+/g );
@@ -487,6 +592,7 @@ function sentences_readingScore(text, eng_synonyms) {
   var count = 0;
   if (sentences) {
     for (let i = 0; i < sentences.length; i++) {
+      checkFirstLetter(sentences[i]);
       var readingScore = calc_readingScore(sentences[i]);
       if (readingScore <= 50 || sentences[i].split(" ").length > 23) {
         identifyBigWords(sentences[i], eng_synonyms);

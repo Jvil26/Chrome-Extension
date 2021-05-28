@@ -6,10 +6,12 @@
     "icons": {
         "512": "logo512.png"
     },
-    "permissions": ["activeTab", "<all_urls>"],
-    "browser_action": {
+    "permissions" : [
+        "declarativeContent",
+        "activeTab"
+    ],    "browser_action": {
         "default_icon": "logo512.png",
         "default_popup": "popup.html"
     },
-    "web_accessible_resources": ["script.js"]
+    "web_accessible_resources": ["googleDocsUtil.js"]
 }

@@ -6,10 +6,19 @@
     "icons": {
         "512": "logo512.png"
     },
-    "permissions": ["activeTab", "<all_urls>"],
-    "browser_action": {
+    "content_scripts": [
+        {
+          "js": ["googleDocsUtil.js", "receiver.js"],
+          "matches": ["https://docs.google.com/document/*"],
+          "run_at": "document_idle"
+        }
+    ],
+    "permissions" : [
+        "declarativeContent",
+        "activeTab"
+    ],    "browser_action": {
         "default_icon": "logo512.png",
         "default_popup": "popup.html"
     },
-    "web_accessible_resources": ["script.js"]
+    "web_accessible_resources": ["googleDocsUtil.js"]
 }
