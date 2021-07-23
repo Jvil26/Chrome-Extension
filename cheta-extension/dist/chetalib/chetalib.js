@@ -283,7 +283,7 @@ function init() {
         newLearn_more_page += '<p class="cheta-pfnt">"<span class="details_sentence" style="font-size: 1.2vw">'+details.sentence+'</span>"</p><br>'
         if (details.sentenceLength >= 23 && details.readingScore < 50) {
           newLearn_more_page += '<p class="cheta-pfnt">This sentence is too long (<span class="details_tooLongAndHardToRead">'+details.sentenceLength+'</span> words) - please consider revising. Low Readability Score (<span class="details_readingScore">'+details.readingScore+'</span>). Have you thought about using smaller words and shorter sentences?</p><br>';
-        } else if (details.readingScore <= 50) {
+        } else if (details.readingScore < 50) {
           newLearn_more_page += '<p class="cheta-pfnt">Low Readability Score (<span class="details_hardToRead" id='+details.readingScore+'>'+details.readingScore+'</span>). Have you thought about using smaller words or shorter sentences?</p><br>';
         } else {
           newLearn_more_page += '<p class="cheta-pfnt">This sentence is too long (<span class="details_tooLong">'+details.sentenceLength+'</span> words) - please consider revising. Have you thought about using smaller words and shorter sentences?</p><br>';
@@ -493,7 +493,7 @@ function init() {
         learn_more_html += '<p class="cheta-pfnt">"<span class="details_sentence" style="font-size: 1.2vw">'+details.sentence+'</span>"</p><br>'
         if (details.sentenceLength >= 23 && details.readingScore < 50) {
           learn_more_html += '<p class="cheta-pfnt">This sentence is too long (<span class="details_tooLong">'+details.sentenceLength+'</span> words) - please consider revising. Low Readability Score (<span class="details_readingScore" id='+details.readingScore+'>'+details.readingScore+'</span>). Have you thought about using smaller words and shorter sentences?</p><br>';
-        } else if (details.readingScore <= 50) {
+        } else if (details.readingScore < 50) {
           learn_more_html += '<p class="cheta-pfnt">Low Readability Score (<span class="details_readingScore" id='+details.readingScore+'>'+details.readingScore+'</span>). Have you thought about using smaller words or shorter sentences?</p><br>';
         } else {
           learn_more_html += '<p class="cheta-pfnt">This sentence is too long (<span class="details_tooLong">'+details.sentenceLength+'</span> words) - please consider revising. Have you thought about using smaller words and shorter sentences?</p><br>';
@@ -714,7 +714,6 @@ function wordSuggestions(words, eng_synonyms) {
 }
 
 function highlight(word, color, underlineColor) {
-  console.log(word);
   var googleDocsSpan = document.getElementsByClassName('kix-wordhtmlgenerator-word-node');
   for (let i = 0; i < googleDocsSpan.length; i++) {
       if (googleDocsSpan[i].innerHTML.search(word) > -1) {
@@ -811,7 +810,7 @@ function sentences_readingScore(text, eng_synonyms) {
         }
         identifyBigWords(sentences[i], eng_synonyms);
         obj.sentence = sentences[i].trim();
-        obj.readingScore = calc_readingScore(sentences[i]);
+        obj.readingScore = readingScore;
         obj.sentenceLength = sentences[i].split(" ").length;
         details[count] = { ...obj };
         count++;
